@@ -69,20 +69,23 @@ public class NotInMemoryImpl implements DAO {
         try (FileChannel fileChannel = FileChannel.open(filePath, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             ByteBuffer size = ByteBuffer.allocate(Integer.BYTES);
             for (Record record : storage.values()) {
-                if (!isTombstone(record)) {
-                    writeValue(fileChannel, record.getKey(), size);
-                    writeValue(fileChannel, record.getValue(), size);
-                }
+                writeValue(fileChannel, record.getKey(), size);
+                writeValue(fileChannel, record.getValue(), size);
             }
         }
     }
 
-    private static void writeValue(FileChannel fileChannel, ByteBuffer value, ByteBuffer size) throws IOException {
+    private static void writeValue(FileChannel fileChannel, @Nullable ByteBuffer value, ByteBuffer size) throws IOException {
         size.position(0);
-        size.putInt(value.remaining());
+        if (value == null) {
+            size.putInt(-1);
+            fileChannel.write(size);
+        } else {
+            size.putInt(value.remaining());
+            fileChannel.write(size);
+            fileChannel.write(value);
+        }
         size.position(0);
-        fileChannel.write(size);
-        fileChannel.write(value);
     }
 
     private static ByteBuffer readValue(FileChannel fileChannel, ByteBuffer size) throws IOException {
