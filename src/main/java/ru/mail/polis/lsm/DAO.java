@@ -3,7 +3,9 @@ package ru.mail.polis.lsm;
 import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Minimal database API.
@@ -32,4 +34,26 @@ public interface DAO extends Closeable {
 
         return result;
     }
+
+
+    static Iterator<Record> mergeTwoIterators(Iterator<Record> left, Iterator<Record> right) {
+        return Collections.emptyIterator();
+    }
+
+
+    static Iterator<Record> merge(List<Iterator<Record>> iterators) {
+        switch (iterators.size()) {
+            case 0:
+                return Collections.emptyIterator();
+            case 1:
+                return iterators.get(0);
+            case 2:
+                return mergeTwoIterators(iterators.get(0), iterators.get(1));
+            default:
+                Iterator<Record> left = merge(iterators.subList(0, iterators.size() / 2));
+                Iterator<Record> right = merge(iterators.subList(iterators.size() / 2, iterators.size()));
+                return mergeTwoIterators(left, right);
+        }
+    }
+
 }
